@@ -123,11 +123,13 @@
       <button class="signout-btn" onclick="signOut()">Sign out</button>
     </div>
 
+    <div style="font-size:12px;color:#888;margin-bottom:6px;">Previous reading</div>
     <div class="summary-grid">
       <div class="summary-card"><div class="summary-label">pH</div><div class="summary-value" id="s-ph">—</div></div>
       <div class="summary-card"><div class="summary-label">Chlorine</div><div class="summary-value" id="s-cl">—</div></div>
       <div class="summary-card"><div class="summary-label">Alkalinity</div><div class="summary-value" id="s-alk">—</div></div>
     </div>
+    <div id="summary-advice" class="advice" style="display:none;margin-bottom:1rem;"></div>
 
     <div class="card">
       <h2>Log a reading</h2>
@@ -294,6 +296,15 @@ function updateSummary(readings) {
   document.getElementById('s-ph').textContent  = latest?.ph         != null ? latest.ph.toFixed(1)          : '—';
   document.getElementById('s-cl').textContent  = latest?.chlorine   != null ? latest.chlorine.toFixed(1)    : '—';
   document.getElementById('s-alk').textContent = latest?.alkalinity != null ? Math.round(latest.alkalinity) : '—';
+  const box = document.getElementById('summary-advice');
+  if (!latest) { box.style.display = 'none'; return; }
+  const lines = [];
+  if (latest.ph         != null) { const s = getStatus('ph',  latest.ph);         if (s !== 'good') lines.push(chemicals.ph[s]);  }
+  if (latest.chlorine   != null) { const s = getStatus('cl',  latest.chlorine);   if (s !== 'good') lines.push(chemicals.cl[s]);  }
+  if (latest.alkalinity != null) { const s = getStatus('alk', latest.alkalinity); if (s !== 'good') lines.push(chemicals.alk[s]); }
+  if (lines.length === 0) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  box.innerHTML = lines.map(l => '• ' + l).join('<br>');
 }
 
 let trendChart = null;
@@ -325,7 +336,7 @@ function renderChart(readings) {
           backgroundColor: 'rgba(24,95,165,0.08)',
           tension: 0.3,
           spanGaps: true,
-          yAxisID: 'y',
+          yAxisID: 'yPh',
           pointRadius: 3,
         },
         {
@@ -335,7 +346,7 @@ function renderChart(readings) {
           backgroundColor: 'rgba(59,109,17,0.08)',
           tension: 0.3,
           spanGaps: true,
-          yAxisID: 'y',
+          yAxisID: 'yCl',
           pointRadius: 3,
         },
         {
@@ -345,7 +356,7 @@ function renderChart(readings) {
           backgroundColor: 'rgba(133,79,11,0.08)',
           tension: 0.3,
           spanGaps: true,
-          yAxisID: 'y2',
+          yAxisID: 'yAlk',
           pointRadius: 3,
         },
       ]
@@ -357,19 +368,27 @@ function renderChart(readings) {
         legend: { labels: { font: { size: 12 }, boxWidth: 12, padding: 16 } }
       },
       scales: {
-        y: {
+        yPh: {
           type: 'linear',
           position: 'left',
-          title: { display: true, text: 'pH / Chlorine', font: { size: 11 }, color: '#888' },
-          ticks: { font: { size: 11 } },
+          min: 6.2,
+          max: 8.4,
+          title: { display: true, text: 'pH', font: { size: 11 }, color: '#185FA5' },
+          ticks: { font: { size: 11 }, color: '#185FA5' },
           grid: { color: 'rgba(0,0,0,0.06)' },
         },
-        y2: {
+        yCl: {
           type: 'linear',
           position: 'right',
-          title: { display: true, text: 'Alkalinity', font: { size: 11 }, color: '#888' },
-          ticks: { font: { size: 11 } },
+          min: 0,
+          max: 10,
+          title: { display: true, text: 'Chlorine (ppm)', font: { size: 11 }, color: '#3B6D11' },
+          ticks: { font: { size: 11 }, color: '#3B6D11' },
           grid: { drawOnChartArea: false },
+        },
+        yAlk: {
+          type: 'linear',
+          display: false,
         },
         x: {
           ticks: { font: { size: 11 }, maxRotation: 45 },
