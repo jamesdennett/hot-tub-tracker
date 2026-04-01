@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hot Tub Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; padding: 1rem; color: #1a1a1a; }
@@ -114,14 +115,29 @@
 </div>
 
 <script>
+const SUPABASE_URL = 'https://xhtxjynxyjiwtxijhkkg.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_sWZ58R0jKqImcueDeHK2Cw_l6RJiBRi';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 const chemicals = {
   ph:  { min: 7.2, max: 7.6,  label: 'pH',        low: 'pH is low — add pH increaser (sodium carbonate)',               high: 'pH is high — add pH decreaser (sodium bisulfate)',                  good: 'pH is spot on' },
   cl:  { min: 3,   max: 5,    label: 'Chlorine',   low: 'Chlorine is low — add chlorine/bromine tablets or shock',        high: 'Chlorine is very high — allow to dissipate before using the tub',   good: 'Chlorine level is good' },
   alk: { min: 80,  max: 120,  label: 'Alkalinity', low: 'Alkalinity is low — add alkalinity increaser (sodium bicarbonate)', high: 'Alkalinity is high — add pH decreaser slowly to bring it down', good: 'Alkalinity is balanced' }
 };
 
-let history = JSON.parse(localStorage.getItem('hottub_history') || '[]');
-renderHistory();
+let history = [];
+loadHistory();
+
+async function loadHistory() {
+  const { data, error } = await db
+    .from('readings')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(10);
+  if (error) { console.error('Error loading readings:', error); return; }
+  history = data || [];
+  renderHistory();
+}
 
 function getStatus(key, val) {
   const c = chemicals[key];
@@ -157,39 +173,44 @@ function updateAdvice() {
   box.innerHTML = lines.map(l => '• ' + l).join('<br>');
 }
 
-function logReading() {
+async function logReading() {
   const ph  = parseFloat(document.getElementById('ph-input').value);
   const cl  = parseFloat(document.getElementById('cl-input').value);
   const alk = parseFloat(document.getElementById('alk-input').value);
   const notes = document.getElementById('notes-input').value.trim();
   if (isNaN(ph) && isNaN(cl) && isNaN(alk)) { alert('Enter at least one reading before saving.'); return; }
   const entry = {
-    date: new Date().toLocaleString('en-GB'),
     ph: isNaN(ph) ? null : ph,
-    cl: isNaN(cl) ? null : cl,
-    alk: isNaN(alk) ? null : alk,
+    chlorine: isNaN(cl) ? null : cl,
+    alkalinity: isNaN(alk) ? null : alk,
     notes: notes || null
   };
-  history.unshift(entry);
-  localStorage.setItem('hottub_history', JSON.stringify(history));
+  const btn = document.querySelector('.log-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  const { error } = await db.from('readings').insert([entry]);
+  btn.disabled = false;
+  btn.textContent = 'Save reading';
+  if (error) { alert('Error saving reading: ' + error.message); return; }
   ['ph-input','cl-input','alk-input'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('notes-input').value = '';
   ['ph','cl','alk'].forEach(k => { const b = document.getElementById(k+'-status'); b.textContent='—'; b.className='status-badge badge-empty'; });
   ['s-ph','s-cl','s-alk'].forEach(id => document.getElementById(id).textContent = '—');
   document.getElementById('advice-box').style.display = 'none';
-  renderHistory();
+  await loadHistory();
 }
 
 function renderHistory() {
   const el = document.getElementById('history-list');
   if (history.length === 0) { el.innerHTML = '<div class="empty-history">No readings logged yet</div>'; return; }
-  el.innerHTML = history.slice(0, 10).map(e => {
+  el.innerHTML = history.map(e => {
     const pills = [];
-    if (e.ph  !== null) { const s = getStatus('ph',  e.ph);  pills.push(`<span class="history-pill pill-${s === 'good' ? 'good' : s === 'low' ? 'warn' : 'bad'}">pH ${e.ph.toFixed(1)}</span>`); }
-    if (e.cl  !== null) { const s = getStatus('cl',  e.cl);  pills.push(`<span class="history-pill pill-${s === 'good' ? 'good' : s === 'low' ? 'warn' : 'bad'}">Cl ${e.cl.toFixed(1)}</span>`); }
-    if (e.alk !== null) { const s = getStatus('alk', e.alk); pills.push(`<span class="history-pill pill-${s === 'good' ? 'good' : s === 'low' ? 'warn' : 'bad'}">Alk ${Math.round(e.alk)}</span>`); }
+    if (e.ph        !== null) { const s = getStatus('ph',  e.ph);        pills.push(`<span class="history-pill pill-${s === 'good' ? 'good' : s === 'low' ? 'warn' : 'bad'}">pH ${e.ph.toFixed(1)}</span>`); }
+    if (e.chlorine  !== null) { const s = getStatus('cl',  e.chlorine);  pills.push(`<span class="history-pill pill-${s === 'good' ? 'good' : s === 'low' ? 'warn' : 'bad'}">Cl ${e.chlorine.toFixed(1)}</span>`); }
+    if (e.alkalinity !== null) { const s = getStatus('alk', e.alkalinity); pills.push(`<span class="history-pill pill-${s === 'good' ? 'good' : s === 'low' ? 'warn' : 'bad'}">Alk ${Math.round(e.alkalinity)}</span>`); }
     const notesHtml = e.notes ? `<div class="history-notes">${e.notes}</div>` : '';
-    return `<div class="history-item"><div class="history-date">${e.date}</div><div class="history-pills">${pills.join('')}</div>${notesHtml}</div>`;
+    const date = new Date(e.created_at).toLocaleString('en-GB');
+    return `<div class="history-item"><div class="history-date">${date}</div><div class="history-pills">${pills.join('')}</div>${notesHtml}</div>`;
   }).join('');
 }
 </script>
