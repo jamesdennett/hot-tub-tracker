@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hot Tub Tracker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; padding: 1rem; color: #1a1a1a; }
+    .app { max-width: 480px; margin: 0 auto; }
+    .header { margin-bottom: 1.5rem; }
+    .header h1 { font-size: 20px; font-weight: 500; }
+    .header p { font-size: 13px; color: #666; margin-top: 4px; }
+    .card { background: #fff; border: 0.5px solid rgba(0,0,0,0.15); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    .card h2 { font-size: 15px; font-weight: 500; margin-bottom: 1rem; }
+    .chemical-row { margin-bottom: 1rem; }
+    .chemical-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .chemical-name { font-size: 14px; font-weight: 500; }
+    .chemical-range { font-size: 12px; color: #888; }
+    .input-row { display: flex; gap: 8px; align-items: center; }
+    .input-row input { flex: 1; padding: 8px 10px; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; font-size: 14px; outline: none; }
+    .input-row input:focus { border-color: rgba(0,0,0,0.4); }
+    .status-badge { font-size: 11px; padding: 3px 8px; border-radius: 8px; font-weight: 500; white-space: nowrap; }
+    .badge-good { background: #EAF3DE; color: #3B6D11; }
+    .badge-warn { background: #FAEEDA; color: #854F0B; }
+    .badge-bad { background: #FCEBEB; color: #A32D2D; }
+    .badge-empty { background: #f0efea; color: #888; }
+    .log-btn { width: 100%; padding: 10px; font-size: 14px; font-weight: 500; background: #e6f1fb; color: #185FA5; border: none; border-radius: 8px; cursor: pointer; margin-top: 0.5rem; }
+    .log-btn:hover { opacity: 0.85; }
+    .history-item { border-top: 0.5px solid rgba(0,0,0,0.1); padding: 10px 0; }
+    .history-item:first-child { border-top: none; }
+    .history-date { font-size: 12px; color: #888; margin-bottom: 6px; }
+    .history-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+    .history-pill { font-size: 12px; padding: 2px 8px; border-radius: 999px; }
+    .pill-good { background: #EAF3DE; color: #3B6D11; }
+    .pill-warn { background: #FAEEDA; color: #854F0B; }
+    .pill-bad { background: #FCEBEB; color: #A32D2D; }
+    .empty-history { font-size: 13px; color: #888; text-align: center; padding: 1rem 0; }
+    .summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 1rem; }
+    .summary-card { background: #f5f5f3; border-radius: 8px; padding: 10px 12px; text-align: center; }
+    .summary-label { font-size: 11px; color: #888; margin-bottom: 4px; }
+    .summary-value { font-size: 20px; font-weight: 500; }
+    .advice { font-size: 13px; color: #666; background: #f5f5f3; border-radius: 8px; padding: 10px 12px; margin-top: 0.75rem; line-height: 1.5; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>Hot tub tracker</h1>
+    <p>Log your chemical readings and keep things balanced</p>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-card"><div class="summary-label">pH</div><div class="summary-value" id="s-ph">—</div></div>
+    <div class="summary-card"><div class="summary-label">Chlorine</div><div class="summary-value" id="s-cl">—</div></div>
+    <div class="summary-card"><div class="summary-label">Alkalinity</div><div class="summary-value" id="s-alk">—</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Log a reading</h2>
+
+    <div class="chemical-row">
+      <div class="chemical-label">
+        <span class="chemical-name">pH</span>
+        <span class="chemical-range">Ideal: 7.2 – 7.8</span>
+      </div>
+      <div class="input-row">
+        <input type="number" id="ph-input" placeholder="e.g. 7.4" step="0.1" min="0" max="14" oninput="updateStatus('ph')">
+        <span class="status-badge badge-empty" id="ph-status">—</span>
+      </div>
+    </div>
+
+    <div class="chemical-row">
+      <div class="chemical-label">
+        <span class="chemical-name">Chlorine / Bromine</span>
+        <span class="chemical-range">Ideal: 1 – 3 ppm</span>
+      </div>
+      <div class="input-row">
+        <input type="number" id="cl-input" placeholder="e.g. 2.0" step="0.1" min="0" max="20" oninput="updateStatus('cl')">
+        <span class="status-badge badge-empty" id="cl-status">—</span>
+      </div>
+    </div>
+
+    <div class="chemical-row">
+      <div class="chemical-label">
+        <span class="chemical-name">Total alkalinity</span>
+        <span class="chemical-range">Ideal: 80 – 120 ppm</span>
+      </div>
+      <div class="input-row">
+        <input type="number" id="alk-input" placeholder="e.g. 100" step="1" min="0" max="300" oninput="updateStatus('alk')">
+        <span class="status-badge badge-empty" id="alk-status">—</span>
+      </div>
+    </div>
+
+    <div id="advice-box" style="display:none;" class="advice"></div>
+    <button class="log-btn" onclick="logReading()">Save reading</button>
+  </div>
+
+  <div class="card">
+    <h2>History</h2>
+    <div id="history-list"><div class="empty-history">No readings logged yet</div></div>
+  </div>
+</div>
+
+<script>
+const chemicals = {
+  ph:  { min: 7.2, max: 7.8,  label: 'pH',          low: 'pH is low — add pH increaser (sodium carbonate)',              high: 'pH is high — add pH decreaser (sodium bisulfate)',                   good: 'pH is spot on' },
+  cl:  { min: 1,   max: 3,    label: 'Chlorine',     low: 'Chlorine is low — add chlorine/bromine tablets or shock',       high: 'Chlorine is very high — allow to dissipate before using the tub',    good: 'Chlorine level is good' },
+  alk: { min: 80,  max: 120,  label: 'Alkalinity',   low: 'Alkalinity is low — add alkalinity increaser (sodium bicarbonate)', high: 'Alkalinity is high — add pH decreaser slowly to bring it down',  good: 'Alkalinity is balanced' }
+};
+
+let history = JSON.parse(localStorage.getItem('hottub_history') || '[]');
+renderHistory();
+
+function getStatus(key, val) {
+  const c = chemicals[key];
+  if (val < c.min) return 'low';
+  if (val > c.max) return 'high';
+  return 'good';
+}
+
+function updateStatus(key) {
+  const input = document.getElementById(key + '-input');
+  const badge = document.getElementById(key + '-status');
+  const val = parseFloat(input.value);
+  if (isNaN(val)) { badge.textContent = '—'; badge.className = 'status-badge badge-empty'; updateAdvice(); return; }
+  const status = getStatus(key, val);
+  badge.textContent = status === 'good' ? 'Good' : status === 'low' ? 'Too low' : 'Too high';
+  badge.className = 'status-badge ' + (status === 'good' ? 'badge-good' : status === 'low' ? 'badge-warn' : 'badge-bad');
+  const sid = key === 'ph' ? 's-ph' : key === 'cl' ? 's-cl' : 's-alk';
+  document.getElementById(sid).textContent = val.toFixed(key === 'alk' ? 0 : 1);
+  updateAdvice();
+}
+
+function updateAdvice() {
+  const box = document.getElementById('advice-box');
+  const lines = [];
+  ['ph','cl','alk'].forEach(key => {
+    const val = parseFloat(document.getElementById(key + '-input').value);
+    if (isNaN(val)) return;
+    const status = getStatus(key, val);
+    if (status !== 'good') lines.push(chemicals[key][status]);
+  });
+  if (lines.length === 0) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  box.innerHTML = lines.map(l => '• ' + l).join('<br>');
+}
+
+function logReading() {
+  const ph  = parseFloat(document.getElementById('ph-input').value);
+  const cl  = parseFloat(document.getElementById('cl-input').value);
+  const alk = parseFloat(document.getElementById('alk-input').value);
+  if (isNaN(ph) && isNaN(cl) && isNaN(alk)) { alert('Enter at least one reading before saving.'); return; }
+  const entry = { date: new Date().toLocaleString('en-GB'), ph: isNaN(ph) ? null : ph, cl: isNaN(cl) ? null : cl, alk: isNaN(alk) ? null : alk };
+  history.unshift(entry);
+  localStorage.setItem('hottub_history', JSON.stringify(history));
+  ['ph-input','cl-input','alk-input'].forEach(id => document.getElementById(id).value = '');
+  ['ph','cl','alk'].forEach(k => { const b = document.getElementById(k+'-status'); b.textContent='—'; b.className='status-badge badge-empty'; });
+  ['s-ph','s-cl','s-alk'].forEach(id => document.getElementById(id).textContent = '—');
+  document.getElementById('advice-box').style.display = 'none';
+  renderHistory();
+}
+
+function renderHistory() {
+  const el = document.getElementById('history-list');
+  if (history.length === 0) { el.innerHTML = '<div class="empty-history">No readings logged yet</div>'; return; }
+  el.innerHTML = history.slice(0, 10).map(e => {
+    const pills = [];
+    if (e.ph  !== null) { const s = getStatus('ph',  e.ph);  pills.push(`<span class="history-pill pill-${s === 'good' ? 'good' : s === 'low' ? 'warn' : 'bad'}">pH ${e.ph.toFixed(1)}</span>`); }
+    if (e.cl  !== null) { const s = getStatus('cl',  e.cl);  pills.push(`<span class="history-pill pill-${s === 'good' ? 'good' : s === 'low' ? 'warn' : 'bad'}">Cl ${e.cl.toFixed(1)}</span>`); }
+    if (e.alk !== null) { const s = getStatus('alk', e.alk); pills.push(`<span class="history-pill pill-${s === 'good' ? 'good' : s === 'low' ? 'warn' : 'bad'}">Alk ${Math.round(e.alk)}</span>`); }
+    return `<div class="history-item"><div class="history-date">${e.date}</div><div class="history-pills">${pills.join('')}</div></div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
