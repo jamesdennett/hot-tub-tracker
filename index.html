@@ -48,6 +48,22 @@
     .summary-label { font-size: 11px; color: #888; margin-bottom: 4px; }
     .summary-value { font-size: 20px; font-weight: 500; }
     .advice { font-size: 13px; color: #666; background: #f5f5f3; border-radius: 8px; padding: 10px 12px; margin-top: 0.75rem; line-height: 1.5; }
+    #auth-screen { display: none; }
+    #main-app { display: none; }
+    .auth-field { margin-bottom: 0.75rem; }
+    .auth-field label { font-size: 13px; font-weight: 500; display: block; margin-bottom: 4px; }
+    .auth-field input { width: 100%; padding: 8px 10px; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; font-size: 14px; outline: none; }
+    .auth-field input:focus { border-color: rgba(0,0,0,0.4); }
+    .auth-btns { display: flex; gap: 8px; margin-top: 1rem; }
+    .auth-btns button { flex: 1; padding: 10px; font-size: 14px; font-weight: 500; border: none; border-radius: 8px; cursor: pointer; }
+    .btn-login { background: #e6f1fb; color: #185FA5; }
+    .btn-signup { background: #f0efea; color: #444; }
+    .auth-btns button:hover { opacity: 0.85; }
+    .auth-btns button:disabled { opacity: 0.5; cursor: default; }
+    .auth-error { font-size: 13px; color: #A32D2D; margin-top: 0.75rem; display: none; }
+    .signout-btn { font-size: 12px; color: #888; background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; }
+    .signout-btn:hover { color: #444; }
+    .header-row { display: flex; justify-content: space-between; align-items: flex-start; }
   </style>
 </head>
 <body>
@@ -57,60 +73,86 @@
     <p>Log your chemical readings and keep things balanced</p>
   </div>
 
-  <div class="summary-grid">
-    <div class="summary-card"><div class="summary-label">pH</div><div class="summary-value" id="s-ph">—</div></div>
-    <div class="summary-card"><div class="summary-label">Chlorine</div><div class="summary-value" id="s-cl">—</div></div>
-    <div class="summary-card"><div class="summary-label">Alkalinity</div><div class="summary-value" id="s-alk">—</div></div>
+  <div id="auth-screen">
+    <div class="card">
+      <h2>Sign in</h2>
+      <div class="auth-field">
+        <label for="auth-email">Email</label>
+        <input type="email" id="auth-email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="auth-field">
+        <label for="auth-password">Password</label>
+        <input type="password" id="auth-password" placeholder="Password" autocomplete="current-password">
+      </div>
+      <div class="auth-btns">
+        <button class="btn-login" onclick="signIn()">Log in</button>
+        <button class="btn-signup" onclick="signUp()">Sign up</button>
+      </div>
+      <div class="auth-error" id="auth-error"></div>
+    </div>
   </div>
 
-  <div class="card">
-    <h2>Log a reading</h2>
-
-    <div class="chemical-row">
-      <div class="chemical-label">
-        <span class="chemical-name">pH</span>
-        <span class="chemical-range">Ideal: 7.2 – 7.6</span>
-      </div>
-      <div class="input-row">
-        <input type="number" id="ph-input" placeholder="e.g. 7.4" step="0.1" min="0" max="14" oninput="updateStatus('ph')">
-        <span class="status-badge badge-empty" id="ph-status">—</span>
-      </div>
+  <div id="main-app">
+    <div class="header-row" style="margin-bottom:1.5rem;">
+      <span id="user-email" style="font-size:13px;color:#888;"></span>
+      <button class="signout-btn" onclick="signOut()">Sign out</button>
     </div>
 
-    <div class="chemical-row">
-      <div class="chemical-label">
-        <span class="chemical-name">Chlorine / Bromine</span>
-        <span class="chemical-range">Ideal: 3 – 5 ppm</span>
-      </div>
-      <div class="input-row">
-        <input type="number" id="cl-input" placeholder="e.g. 4.0" step="0.1" min="0" max="20" oninput="updateStatus('cl')">
-        <span class="status-badge badge-empty" id="cl-status">—</span>
-      </div>
+    <div class="summary-grid">
+      <div class="summary-card"><div class="summary-label">pH</div><div class="summary-value" id="s-ph">—</div></div>
+      <div class="summary-card"><div class="summary-label">Chlorine</div><div class="summary-value" id="s-cl">—</div></div>
+      <div class="summary-card"><div class="summary-label">Alkalinity</div><div class="summary-value" id="s-alk">—</div></div>
     </div>
 
-    <div class="chemical-row">
-      <div class="chemical-label">
-        <span class="chemical-name">Total alkalinity</span>
-        <span class="chemical-range">Ideal: 80 – 120 ppm</span>
+    <div class="card">
+      <h2>Log a reading</h2>
+
+      <div class="chemical-row">
+        <div class="chemical-label">
+          <span class="chemical-name">pH</span>
+          <span class="chemical-range">Ideal: 7.2 – 7.6</span>
+        </div>
+        <div class="input-row">
+          <input type="number" id="ph-input" placeholder="e.g. 7.4" step="0.1" min="0" max="14" oninput="updateStatus('ph')">
+          <span class="status-badge badge-empty" id="ph-status">—</span>
+        </div>
       </div>
-      <div class="input-row">
-        <input type="number" id="alk-input" placeholder="e.g. 100" step="1" min="0" max="300" oninput="updateStatus('alk')">
-        <span class="status-badge badge-empty" id="alk-status">—</span>
+
+      <div class="chemical-row">
+        <div class="chemical-label">
+          <span class="chemical-name">Chlorine / Bromine</span>
+          <span class="chemical-range">Ideal: 3 – 5 ppm</span>
+        </div>
+        <div class="input-row">
+          <input type="number" id="cl-input" placeholder="e.g. 4.0" step="0.1" min="0" max="20" oninput="updateStatus('cl')">
+          <span class="status-badge badge-empty" id="cl-status">—</span>
+        </div>
       </div>
+
+      <div class="chemical-row">
+        <div class="chemical-label">
+          <span class="chemical-name">Total alkalinity</span>
+          <span class="chemical-range">Ideal: 80 – 120 ppm</span>
+        </div>
+        <div class="input-row">
+          <input type="number" id="alk-input" placeholder="e.g. 100" step="1" min="0" max="300" oninput="updateStatus('alk')">
+          <span class="status-badge badge-empty" id="alk-status">—</span>
+        </div>
+      </div>
+
+      <div class="notes-row">
+        <label for="notes-input">Notes</label>
+        <textarea id="notes-input" placeholder="e.g. Added chlorine tablets, water looked cloudy..."></textarea>
+      </div>
+
+      <div id="advice-box" style="display:none;" class="advice"></div>
+      <button class="log-btn" onclick="logReading()">Save reading</button>
     </div>
 
-    <div class="notes-row">
-      <label for="notes-input">Notes</label>
-      <textarea id="notes-input" placeholder="e.g. Added chlorine tablets, water looked cloudy..."></textarea>
+    <div class="card">
+      <h2>History</h2>
+      <div id="history-list"><div class="empty-history">No readings logged yet</div></div>
     </div>
-
-    <div id="advice-box" style="display:none;" class="advice"></div>
-    <button class="log-btn" onclick="logReading()">Save reading</button>
-  </div>
-
-  <div class="card">
-    <h2>History</h2>
-    <div id="history-list"><div class="empty-history">No readings logged yet</div></div>
   </div>
 </div>
 
@@ -126,12 +168,60 @@ const chemicals = {
 };
 
 let history = [];
-loadHistory();
+let currentUser = null;
+
+db.auth.onAuthStateChange((_event, session) => {
+  currentUser = session?.user ?? null;
+  if (currentUser) {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('main-app').style.display = 'block';
+    document.getElementById('user-email').textContent = currentUser.email;
+    loadHistory();
+  } else {
+    document.getElementById('auth-screen').style.display = 'block';
+    document.getElementById('main-app').style.display = 'none';
+  }
+});
+
+async function signIn() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  setAuthBtns(true);
+  const { error } = await db.auth.signInWithPassword({ email, password });
+  setAuthBtns(false);
+  showAuthError(error ? error.message : null);
+}
+
+async function signUp() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  setAuthBtns(true);
+  const { error } = await db.auth.signUp({ email, password });
+  setAuthBtns(false);
+  if (error) { showAuthError(error.message); return; }
+  showAuthError('Check your email to confirm your account.');
+}
+
+async function signOut() {
+  await db.auth.signOut();
+}
+
+function setAuthBtns(disabled) {
+  document.querySelectorAll('.auth-btns button').forEach(b => b.disabled = disabled);
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg || '';
+  el.style.display = msg ? 'block' : 'none';
+}
 
 async function loadHistory() {
+  if (!currentUser) return;
   const { data, error } = await db
     .from('readings')
     .select('*')
+    .eq('user_id', currentUser.id)
     .order('created_at', { ascending: false })
     .limit(10);
   if (error) { console.error('Error loading readings:', error); return; }
@@ -180,6 +270,7 @@ async function logReading() {
   const notes = document.getElementById('notes-input').value.trim();
   if (isNaN(ph) && isNaN(cl) && isNaN(alk)) { alert('Enter at least one reading before saving.'); return; }
   const entry = {
+    user_id: currentUser.id,
     ph: isNaN(ph) ? null : ph,
     chlorine: isNaN(cl) ? null : cl,
     alkalinity: isNaN(alk) ? null : alk,
