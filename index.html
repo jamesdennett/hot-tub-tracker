@@ -18,23 +18,29 @@
     .chemical-name { font-size: 14px; font-weight: 500; }
     .chemical-range { font-size: 12px; color: #888; }
     .input-row { display: flex; gap: 8px; align-items: center; }
-    .input-row input { flex: 1; padding: 8px 10px; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; font-size: 14px; outline: none; }
-    .input-row input:focus { border-color: rgba(0,0,0,0.4); }
+    .input-row input[type="number"] { flex: 1; padding: 8px 10px; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; font-size: 14px; outline: none; }
+    .input-row input[type="number"]:focus { border-color: rgba(0,0,0,0.4); }
+    .notes-row { margin-top: 1rem; }
+    .notes-row label { font-size: 14px; font-weight: 500; display: block; margin-bottom: 4px; }
+    .notes-row textarea { width: 100%; padding: 8px 10px; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; font-size: 13px; font-family: inherit; resize: vertical; min-height: 70px; outline: none; color: #1a1a1a; background: #fff; }
+    .notes-row textarea:focus { border-color: rgba(0,0,0,0.4); }
+    .notes-row textarea::placeholder { color: #aaa; }
     .status-badge { font-size: 11px; padding: 3px 8px; border-radius: 8px; font-weight: 500; white-space: nowrap; }
     .badge-good { background: #EAF3DE; color: #3B6D11; }
     .badge-warn { background: #FAEEDA; color: #854F0B; }
     .badge-bad { background: #FCEBEB; color: #A32D2D; }
     .badge-empty { background: #f0efea; color: #888; }
-    .log-btn { width: 100%; padding: 10px; font-size: 14px; font-weight: 500; background: #e6f1fb; color: #185FA5; border: none; border-radius: 8px; cursor: pointer; margin-top: 0.5rem; }
+    .log-btn { width: 100%; padding: 10px; font-size: 14px; font-weight: 500; background: #e6f1fb; color: #185FA5; border: none; border-radius: 8px; cursor: pointer; margin-top: 0.75rem; }
     .log-btn:hover { opacity: 0.85; }
     .history-item { border-top: 0.5px solid rgba(0,0,0,0.1); padding: 10px 0; }
     .history-item:first-child { border-top: none; }
     .history-date { font-size: 12px; color: #888; margin-bottom: 6px; }
-    .history-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+    .history-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
     .history-pill { font-size: 12px; padding: 2px 8px; border-radius: 999px; }
     .pill-good { background: #EAF3DE; color: #3B6D11; }
     .pill-warn { background: #FAEEDA; color: #854F0B; }
     .pill-bad { background: #FCEBEB; color: #A32D2D; }
+    .history-notes { font-size: 12px; color: #666; margin-top: 4px; font-style: italic; }
     .empty-history { font-size: 13px; color: #888; text-align: center; padding: 1rem 0; }
     .summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 1rem; }
     .summary-card { background: #f5f5f3; border-radius: 8px; padding: 10px 12px; text-align: center; }
@@ -62,7 +68,7 @@
     <div class="chemical-row">
       <div class="chemical-label">
         <span class="chemical-name">pH</span>
-        <span class="chemical-range">Ideal: 7.2 – 7.8</span>
+        <span class="chemical-range">Ideal: 7.2 – 7.6</span>
       </div>
       <div class="input-row">
         <input type="number" id="ph-input" placeholder="e.g. 7.4" step="0.1" min="0" max="14" oninput="updateStatus('ph')">
@@ -73,10 +79,10 @@
     <div class="chemical-row">
       <div class="chemical-label">
         <span class="chemical-name">Chlorine / Bromine</span>
-        <span class="chemical-range">Ideal: 1 – 3 ppm</span>
+        <span class="chemical-range">Ideal: 3 – 5 ppm</span>
       </div>
       <div class="input-row">
-        <input type="number" id="cl-input" placeholder="e.g. 2.0" step="0.1" min="0" max="20" oninput="updateStatus('cl')">
+        <input type="number" id="cl-input" placeholder="e.g. 4.0" step="0.1" min="0" max="20" oninput="updateStatus('cl')">
         <span class="status-badge badge-empty" id="cl-status">—</span>
       </div>
     </div>
@@ -92,6 +98,11 @@
       </div>
     </div>
 
+    <div class="notes-row">
+      <label for="notes-input">Notes</label>
+      <textarea id="notes-input" placeholder="e.g. Added chlorine tablets, water looked cloudy..."></textarea>
+    </div>
+
     <div id="advice-box" style="display:none;" class="advice"></div>
     <button class="log-btn" onclick="logReading()">Save reading</button>
   </div>
@@ -104,9 +115,9 @@
 
 <script>
 const chemicals = {
-  ph:  { min: 7.2, max: 7.8,  label: 'pH',          low: 'pH is low — add pH increaser (sodium carbonate)',              high: 'pH is high — add pH decreaser (sodium bisulfate)',                   good: 'pH is spot on' },
-  cl:  { min: 1,   max: 3,    label: 'Chlorine',     low: 'Chlorine is low — add chlorine/bromine tablets or shock',       high: 'Chlorine is very high — allow to dissipate before using the tub',    good: 'Chlorine level is good' },
-  alk: { min: 80,  max: 120,  label: 'Alkalinity',   low: 'Alkalinity is low — add alkalinity increaser (sodium bicarbonate)', high: 'Alkalinity is high — add pH decreaser slowly to bring it down',  good: 'Alkalinity is balanced' }
+  ph:  { min: 7.2, max: 7.6,  label: 'pH',        low: 'pH is low — add pH increaser (sodium carbonate)',               high: 'pH is high — add pH decreaser (sodium bisulfate)',                  good: 'pH is spot on' },
+  cl:  { min: 3,   max: 5,    label: 'Chlorine',   low: 'Chlorine is low — add chlorine/bromine tablets or shock',        high: 'Chlorine is very high — allow to dissipate before using the tub',   good: 'Chlorine level is good' },
+  alk: { min: 80,  max: 120,  label: 'Alkalinity', low: 'Alkalinity is low — add alkalinity increaser (sodium bicarbonate)', high: 'Alkalinity is high — add pH decreaser slowly to bring it down', good: 'Alkalinity is balanced' }
 };
 
 let history = JSON.parse(localStorage.getItem('hottub_history') || '[]');
@@ -150,11 +161,19 @@ function logReading() {
   const ph  = parseFloat(document.getElementById('ph-input').value);
   const cl  = parseFloat(document.getElementById('cl-input').value);
   const alk = parseFloat(document.getElementById('alk-input').value);
+  const notes = document.getElementById('notes-input').value.trim();
   if (isNaN(ph) && isNaN(cl) && isNaN(alk)) { alert('Enter at least one reading before saving.'); return; }
-  const entry = { date: new Date().toLocaleString('en-GB'), ph: isNaN(ph) ? null : ph, cl: isNaN(cl) ? null : cl, alk: isNaN(alk) ? null : alk };
+  const entry = {
+    date: new Date().toLocaleString('en-GB'),
+    ph: isNaN(ph) ? null : ph,
+    cl: isNaN(cl) ? null : cl,
+    alk: isNaN(alk) ? null : alk,
+    notes: notes || null
+  };
   history.unshift(entry);
   localStorage.setItem('hottub_history', JSON.stringify(history));
   ['ph-input','cl-input','alk-input'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('notes-input').value = '';
   ['ph','cl','alk'].forEach(k => { const b = document.getElementById(k+'-status'); b.textContent='—'; b.className='status-badge badge-empty'; });
   ['s-ph','s-cl','s-alk'].forEach(id => document.getElementById(id).textContent = '—');
   document.getElementById('advice-box').style.display = 'none';
@@ -169,7 +188,8 @@ function renderHistory() {
     if (e.ph  !== null) { const s = getStatus('ph',  e.ph);  pills.push(`<span class="history-pill pill-${s === 'good' ? 'good' : s === 'low' ? 'warn' : 'bad'}">pH ${e.ph.toFixed(1)}</span>`); }
     if (e.cl  !== null) { const s = getStatus('cl',  e.cl);  pills.push(`<span class="history-pill pill-${s === 'good' ? 'good' : s === 'low' ? 'warn' : 'bad'}">Cl ${e.cl.toFixed(1)}</span>`); }
     if (e.alk !== null) { const s = getStatus('alk', e.alk); pills.push(`<span class="history-pill pill-${s === 'good' ? 'good' : s === 'low' ? 'warn' : 'bad'}">Alk ${Math.round(e.alk)}</span>`); }
-    return `<div class="history-item"><div class="history-date">${e.date}</div><div class="history-pills">${pills.join('')}</div></div>`;
+    const notesHtml = e.notes ? `<div class="history-notes">${e.notes}</div>` : '';
+    return `<div class="history-item"><div class="history-date">${e.date}</div><div class="history-pills">${pills.join('')}</div>${notesHtml}</div>`;
   }).join('');
 }
 </script>
