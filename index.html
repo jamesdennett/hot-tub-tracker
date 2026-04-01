@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hot Tub Tracker</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; padding: 1rem; color: #1a1a1a; }
@@ -87,6 +88,7 @@
     .edit-field input, .edit-field textarea { width: 100%; padding: 8px 10px; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; font-size: 14px; font-family: inherit; outline: none; }
     .edit-field input:focus, .edit-field textarea:focus { border-color: rgba(0,0,0,0.4); }
     .edit-field textarea { resize: vertical; min-height: 60px; }
+    .trend-empty { font-size: 13px; color: #888; text-align: center; padding: 1rem 0; }
   </style>
 </head>
 <body>
@@ -121,11 +123,13 @@
       <button class="signout-btn" onclick="signOut()">Sign out</button>
     </div>
 
+    <div style="font-size:12px;color:#888;margin-bottom:6px;">Previous reading</div>
     <div class="summary-grid">
-      <div class="summary-card"><div class="summary-label">pH</div><div class="summary-value" id="s-ph">—</div></div>
-      <div class="summary-card"><div class="summary-label">Chlorine</div><div class="summary-value" id="s-cl">—</div></div>
-      <div class="summary-card"><div class="summary-label">Alkalinity</div><div class="summary-value" id="s-alk">—</div></div>
+      <div class="summary-card" id="sc-ph"><div class="summary-label">pH</div><div class="summary-value" id="s-ph">—</div></div>
+      <div class="summary-card" id="sc-cl"><div class="summary-label">Chlorine</div><div class="summary-value" id="s-cl">—</div></div>
+      <div class="summary-card" id="sc-alk"><div class="summary-label">Alkalinity</div><div class="summary-value" id="s-alk">—</div></div>
     </div>
+    <div id="summary-advice" class="advice" style="display:none;margin-bottom:1rem;"></div>
 
     <div class="card">
       <h2>Log a reading</h2>
@@ -170,6 +174,12 @@
 
       <div id="advice-box" style="display:none;" class="advice"></div>
       <button class="log-btn" onclick="logReading()">Save reading</button>
+    </div>
+
+    <div class="card">
+      <h2>Trends</h2>
+      <div id="trend-empty" class="trend-empty" style="display:none;">No readings yet</div>
+      <canvas id="trend-chart" style="display:none;"></canvas>
     </div>
 
     <div class="card">
@@ -273,10 +283,138 @@ async function loadHistory() {
     .select('*')
     .eq('user_id', currentUser.id)
     .order('created_at', { ascending: false })
-    .limit(10);
+    .limit(30);
   if (error) { console.error('Error loading readings:', error); return; }
   history = data || [];
+  updateSummary(history);
+  renderChart(history);
   renderHistory();
+}
+
+const statusColors = {
+  good:  { bg: '#EAF3DE', text: '#3B6D11' },
+  low:   { bg: '#FAEEDA', text: '#854F0B' },
+  high:  { bg: '#FCEBEB', text: '#A32D2D' },
+  empty: { bg: '#f0efea', text: '#888'    },
+};
+
+function applyCardColor(cardId, valueId, status) {
+  const c = statusColors[status] || statusColors.empty;
+  const card = document.getElementById(cardId);
+  card.style.background = c.bg;
+  card.querySelector('.summary-label').style.color = c.text;
+  document.getElementById(valueId).style.color = c.text;
+}
+
+function updateSummary(readings) {
+  const latest = readings[0];
+  const pairs = [
+    { card: 'sc-ph',  val: 's-ph',  raw: latest?.ph,         key: 'ph',  fmt: v => v.toFixed(1)       },
+    { card: 'sc-cl',  val: 's-cl',  raw: latest?.chlorine,   key: 'cl',  fmt: v => v.toFixed(1)       },
+    { card: 'sc-alk', val: 's-alk', raw: latest?.alkalinity, key: 'alk', fmt: v => Math.round(v) + '' },
+  ];
+  pairs.forEach(({ card, val, raw, key, fmt }) => {
+    if (raw != null) {
+      document.getElementById(val).textContent = fmt(raw);
+      applyCardColor(card, val, getStatus(key, raw));
+    } else {
+      document.getElementById(val).textContent = '—';
+      applyCardColor(card, val, 'empty');
+    }
+  });
+  const box = document.getElementById('summary-advice');
+  if (!latest) { box.style.display = 'none'; return; }
+  const lines = [];
+  if (latest.ph         != null) { const s = getStatus('ph',  latest.ph);         if (s !== 'good') lines.push(chemicals.ph[s]);  }
+  if (latest.chlorine   != null) { const s = getStatus('cl',  latest.chlorine);   if (s !== 'good') lines.push(chemicals.cl[s]);  }
+  if (latest.alkalinity != null) { const s = getStatus('alk', latest.alkalinity); if (s !== 'good') lines.push(chemicals.alk[s]); }
+  if (lines.length === 0) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  box.innerHTML = lines.map(l => '• ' + l).join('<br>');
+}
+
+let trendChart = null;
+
+function renderChart(readings) {
+  const sorted = [...readings].reverse();
+  const canvas = document.getElementById('trend-chart');
+  const empty  = document.getElementById('trend-empty');
+  if (sorted.length === 0) {
+    canvas.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+  canvas.style.display = 'block';
+  empty.style.display = 'none';
+  const labels = sorted.map(e =>
+    new Date(e.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  );
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'pH',
+          data: sorted.map(e => e.ph),
+          borderColor: '#185FA5',
+          backgroundColor: 'rgba(24,95,165,0.08)',
+          tension: 0.3,
+          spanGaps: true,
+          yAxisID: 'yLeft',
+          pointRadius: 3,
+        },
+        {
+          label: 'Chlorine (ppm)',
+          data: sorted.map(e => e.chlorine),
+          borderColor: '#3B6D11',
+          backgroundColor: 'rgba(59,109,17,0.08)',
+          tension: 0.3,
+          spanGaps: true,
+          yAxisID: 'yLeft',
+          pointRadius: 3,
+        },
+        {
+          label: 'Alkalinity (ppm)',
+          data: sorted.map(e => e.alkalinity),
+          borderColor: '#854F0B',
+          backgroundColor: 'rgba(133,79,11,0.08)',
+          tension: 0.3,
+          spanGaps: true,
+          yAxisID: 'yAlk',
+          pointRadius: 3,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { font: { size: 12 }, boxWidth: 12, padding: 16 } }
+      },
+      scales: {
+        yLeft: {
+          type: 'linear',
+          position: 'left',
+          title: { display: true, text: 'pH / Chlorine (ppm)', font: { size: 11 }, color: '#888' },
+          ticks: { font: { size: 11 } },
+          grid: { color: 'rgba(0,0,0,0.06)' },
+        },
+        yAlk: {
+          type: 'linear',
+          position: 'right',
+          title: { display: true, text: 'Alkalinity (ppm)', font: { size: 11 }, color: '#888' },
+          ticks: { font: { size: 11 } },
+          grid: { drawOnChartArea: false },
+        },
+        x: {
+          ticks: { font: { size: 11 }, maxRotation: 45 },
+          grid: { color: 'rgba(0,0,0,0.06)' },
+        }
+      }
+    }
+  });
 }
 
 function getStatus(key, val) {
@@ -336,7 +474,6 @@ async function logReading() {
   ['ph-input','cl-input','alk-input'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('notes-input').value = '';
   ['ph','cl','alk'].forEach(k => { const b = document.getElementById(k+'-status'); b.textContent='—'; b.className='status-badge badge-empty'; });
-  ['s-ph','s-cl','s-alk'].forEach(id => document.getElementById(id).textContent = '—');
   document.getElementById('advice-box').style.display = 'none';
   await loadHistory();
 }
@@ -344,7 +481,7 @@ async function logReading() {
 function renderHistory() {
   const el = document.getElementById('history-list');
   if (history.length === 0) { el.innerHTML = '<div class="empty-history">No readings logged yet</div>'; return; }
-  el.innerHTML = history.map(e => {
+  el.innerHTML = history.slice(0, 10).map(e => {
     const pills = [];
     if (e.ph        !== null) { const s = getStatus('ph',  e.ph);        pills.push(`<span class="history-pill pill-${s === 'good' ? 'good' : s === 'low' ? 'warn' : 'bad'}">pH ${e.ph.toFixed(1)}</span>`); }
     if (e.chlorine  !== null) { const s = getStatus('cl',  e.chlorine);  pills.push(`<span class="history-pill pill-${s === 'good' ? 'good' : s === 'low' ? 'warn' : 'bad'}">Cl ${e.chlorine.toFixed(1)}</span>`); }
