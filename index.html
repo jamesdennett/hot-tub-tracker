@@ -64,6 +64,29 @@
     .signout-btn { font-size: 12px; color: #888; background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; }
     .signout-btn:hover { color: #444; }
     .header-row { display: flex; justify-content: space-between; align-items: flex-start; }
+    .history-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .item-actions { display: flex; gap: 10px; }
+    .item-actions button { font-size: 12px; background: none; border: none; cursor: pointer; padding: 0; }
+    .btn-edit-item { color: #185FA5; }
+    .btn-delete-item { color: #A32D2D; }
+    .item-actions button:hover { opacity: 0.7; }
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; padding: 1rem; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: #fff; border-radius: 14px; padding: 1.25rem; width: 100%; max-width: 380px; }
+    .modal h3 { font-size: 15px; font-weight: 500; margin-bottom: 0.5rem; }
+    .modal p { font-size: 13px; color: #666; margin-bottom: 1.25rem; line-height: 1.5; }
+    .modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
+    .modal-btns button { padding: 8px 16px; font-size: 13px; font-weight: 500; border: none; border-radius: 8px; cursor: pointer; }
+    .btn-cancel { background: #f0efea; color: #444; }
+    .btn-confirm-delete { background: #FCEBEB; color: #A32D2D; }
+    .btn-confirm-save { background: #e6f1fb; color: #185FA5; }
+    .modal-btns button:hover { opacity: 0.85; }
+    .modal-btns button:disabled { opacity: 0.5; cursor: default; }
+    .edit-field { margin-bottom: 0.75rem; }
+    .edit-field label { font-size: 13px; font-weight: 500; display: block; margin-bottom: 4px; }
+    .edit-field input, .edit-field textarea { width: 100%; padding: 8px 10px; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; font-size: 14px; font-family: inherit; outline: none; }
+    .edit-field input:focus, .edit-field textarea:focus { border-color: rgba(0,0,0,0.4); }
+    .edit-field textarea { resize: vertical; min-height: 60px; }
   </style>
 </head>
 <body>
@@ -152,6 +175,33 @@
     <div class="card">
       <h2>History</h2>
       <div id="history-list"><div class="empty-history">No readings logged yet</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirmation modal -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal">
+    <h3>Delete reading?</h3>
+    <p>This can't be undone.</p>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('delete-modal')">Cancel</button>
+      <button class="btn-confirm-delete" id="delete-confirm-btn" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit modal -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <h3>Edit reading</h3>
+    <div class="edit-field"><label>pH</label><input type="number" id="edit-ph" step="0.1" min="0" max="14" placeholder="—"></div>
+    <div class="edit-field"><label>Chlorine / Bromine (ppm)</label><input type="number" id="edit-cl" step="0.1" min="0" max="20" placeholder="—"></div>
+    <div class="edit-field"><label>Total alkalinity (ppm)</label><input type="number" id="edit-alk" step="1" min="0" max="300" placeholder="—"></div>
+    <div class="edit-field"><label>Notes</label><textarea id="edit-notes" placeholder="Notes…"></textarea></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('edit-modal')">Cancel</button>
+      <button class="btn-confirm-save" id="edit-save-btn" onclick="saveEdit()">Save</button>
     </div>
   </div>
 </div>
@@ -301,8 +351,70 @@ function renderHistory() {
     if (e.alkalinity !== null) { const s = getStatus('alk', e.alkalinity); pills.push(`<span class="history-pill pill-${s === 'good' ? 'good' : s === 'low' ? 'warn' : 'bad'}">Alk ${Math.round(e.alkalinity)}</span>`); }
     const notesHtml = e.notes ? `<div class="history-notes">${e.notes}</div>` : '';
     const date = new Date(e.created_at).toLocaleString('en-GB');
-    return `<div class="history-item"><div class="history-date">${date}</div><div class="history-pills">${pills.join('')}</div>${notesHtml}</div>`;
+    return `<div class="history-item">
+      <div class="history-item-header">
+        <span class="history-date">${date}</span>
+        <div class="item-actions">
+          <button class="btn-edit-item" onclick="openEditModal(${e.id})">Edit</button>
+          <button class="btn-delete-item" onclick="openDeleteModal(${e.id})">Delete</button>
+        </div>
+      </div>
+      <div class="history-pills">${pills.join('')}</div>${notesHtml}
+    </div>`;
   }).join('');
+}
+
+let pendingDeleteId = null;
+let pendingEditId = null;
+
+function openDeleteModal(id) {
+  pendingDeleteId = id;
+  document.getElementById('delete-modal').classList.add('open');
+}
+
+async function confirmDelete() {
+  const btn = document.getElementById('delete-confirm-btn');
+  btn.disabled = true;
+  const { error } = await db.from('readings').delete().eq('id', pendingDeleteId);
+  btn.disabled = false;
+  closeModal('delete-modal');
+  if (error) { alert('Error deleting reading: ' + error.message); return; }
+  await loadHistory();
+}
+
+function openEditModal(id) {
+  const e = history.find(r => r.id === id);
+  if (!e) return;
+  pendingEditId = id;
+  document.getElementById('edit-ph').value  = e.ph        ?? '';
+  document.getElementById('edit-cl').value  = e.chlorine  ?? '';
+  document.getElementById('edit-alk').value = e.alkalinity ?? '';
+  document.getElementById('edit-notes').value = e.notes   ?? '';
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+async function saveEdit() {
+  const ph  = parseFloat(document.getElementById('edit-ph').value);
+  const cl  = parseFloat(document.getElementById('edit-cl').value);
+  const alk = parseFloat(document.getElementById('edit-alk').value);
+  const notes = document.getElementById('edit-notes').value.trim();
+  if (isNaN(ph) && isNaN(cl) && isNaN(alk)) { alert('Enter at least one reading before saving.'); return; }
+  const btn = document.getElementById('edit-save-btn');
+  btn.disabled = true;
+  const { error } = await db.from('readings').update({
+    ph: isNaN(ph) ? null : ph,
+    chlorine: isNaN(cl) ? null : cl,
+    alkalinity: isNaN(alk) ? null : alk,
+    notes: notes || null
+  }).eq('id', pendingEditId);
+  btn.disabled = false;
+  closeModal('edit-modal');
+  if (error) { alert('Error saving reading: ' + error.message); return; }
+  await loadHistory();
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
 }
 </script>
 </body>
