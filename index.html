@@ -125,9 +125,9 @@
 
     <div style="font-size:12px;color:#888;margin-bottom:6px;">Previous reading</div>
     <div class="summary-grid">
-      <div class="summary-card"><div class="summary-label">pH</div><div class="summary-value" id="s-ph">—</div></div>
-      <div class="summary-card"><div class="summary-label">Chlorine</div><div class="summary-value" id="s-cl">—</div></div>
-      <div class="summary-card"><div class="summary-label">Alkalinity</div><div class="summary-value" id="s-alk">—</div></div>
+      <div class="summary-card" id="sc-ph"><div class="summary-label">pH</div><div class="summary-value" id="s-ph">—</div></div>
+      <div class="summary-card" id="sc-cl"><div class="summary-label">Chlorine</div><div class="summary-value" id="s-cl">—</div></div>
+      <div class="summary-card" id="sc-alk"><div class="summary-label">Alkalinity</div><div class="summary-value" id="s-alk">—</div></div>
     </div>
     <div id="summary-advice" class="advice" style="display:none;margin-bottom:1rem;"></div>
 
@@ -291,11 +291,37 @@ async function loadHistory() {
   renderHistory();
 }
 
+const statusColors = {
+  good:  { bg: '#EAF3DE', text: '#3B6D11' },
+  low:   { bg: '#FAEEDA', text: '#854F0B' },
+  high:  { bg: '#FCEBEB', text: '#A32D2D' },
+  empty: { bg: '#f0efea', text: '#888'    },
+};
+
+function applyCardColor(cardId, valueId, status) {
+  const c = statusColors[status] || statusColors.empty;
+  const card = document.getElementById(cardId);
+  card.style.background = c.bg;
+  card.querySelector('.summary-label').style.color = c.text;
+  document.getElementById(valueId).style.color = c.text;
+}
+
 function updateSummary(readings) {
   const latest = readings[0];
-  document.getElementById('s-ph').textContent  = latest?.ph         != null ? latest.ph.toFixed(1)          : '—';
-  document.getElementById('s-cl').textContent  = latest?.chlorine   != null ? latest.chlorine.toFixed(1)    : '—';
-  document.getElementById('s-alk').textContent = latest?.alkalinity != null ? Math.round(latest.alkalinity) : '—';
+  const pairs = [
+    { card: 'sc-ph',  val: 's-ph',  raw: latest?.ph,         key: 'ph',  fmt: v => v.toFixed(1)       },
+    { card: 'sc-cl',  val: 's-cl',  raw: latest?.chlorine,   key: 'cl',  fmt: v => v.toFixed(1)       },
+    { card: 'sc-alk', val: 's-alk', raw: latest?.alkalinity, key: 'alk', fmt: v => Math.round(v) + '' },
+  ];
+  pairs.forEach(({ card, val, raw, key, fmt }) => {
+    if (raw != null) {
+      document.getElementById(val).textContent = fmt(raw);
+      applyCardColor(card, val, getStatus(key, raw));
+    } else {
+      document.getElementById(val).textContent = '—';
+      applyCardColor(card, val, 'empty');
+    }
+  });
   const box = document.getElementById('summary-advice');
   if (!latest) { box.style.display = 'none'; return; }
   const lines = [];
@@ -371,8 +397,6 @@ function renderChart(readings) {
         yPh: {
           type: 'linear',
           position: 'left',
-          min: 6.2,
-          max: 8.4,
           title: { display: true, text: 'pH', font: { size: 11 }, color: '#185FA5' },
           ticks: { font: { size: 11 }, color: '#185FA5' },
           grid: { color: 'rgba(0,0,0,0.06)' },
@@ -380,8 +404,6 @@ function renderChart(readings) {
         yCl: {
           type: 'linear',
           position: 'right',
-          min: 0,
-          max: 10,
           title: { display: true, text: 'Chlorine (ppm)', font: { size: 11 }, color: '#3B6D11' },
           ticks: { font: { size: 11 }, color: '#3B6D11' },
           grid: { drawOnChartArea: false },
