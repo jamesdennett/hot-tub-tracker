@@ -50,7 +50,7 @@
     .summary-value { font-size: 20px; font-weight: 500; }
     .advice { font-size: 13px; color: #666; background: #f5f5f3; border-radius: 8px; padding: 10px 12px; margin-top: 0.75rem; line-height: 1.5; }
     #auth-screen { display: none; }
-    #main-app { display: none; }
+    #logged-in { display: none; }
     .auth-field { margin-bottom: 0.75rem; }
     .auth-field label { font-size: 13px; font-weight: 500; display: block; margin-bottom: 4px; }
     .auth-field input { width: 100%; padding: 8px 10px; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; font-size: 14px; outline: none; }
@@ -64,7 +64,9 @@
     .auth-error { font-size: 13px; color: #A32D2D; margin-top: 0.75rem; display: none; }
     .signout-btn { font-size: 12px; color: #888; background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; }
     .signout-btn:hover { color: #444; }
-    .header-row { display: flex; justify-content: space-between; align-items: flex-start; }
+    .user-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+    .settings-nav-btn { font-size: 12px; color: #185FA5; background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; }
+    .settings-nav-btn:hover { opacity: 0.7; }
     .history-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
     .item-actions { display: flex; gap: 10px; }
     .item-actions button { font-size: 12px; background: none; border: none; cursor: pointer; padding: 0; }
@@ -89,6 +91,31 @@
     .edit-field input:focus, .edit-field textarea:focus { border-color: rgba(0,0,0,0.4); }
     .edit-field textarea { resize: vertical; min-height: 60px; }
     .trend-empty { font-size: 13px; color: #888; text-align: center; padding: 1rem 0; }
+    /* Hot tub graphic */
+    .tub-graphic-wrap { text-align: center; margin-bottom: 1.25rem; }
+    .tub-setup-link { font-size: 13px; color: #185FA5; display: inline-block; margin-top: 6px; text-decoration: none; }
+    .tub-setup-link:hover { opacity: 0.7; }
+    /* Settings page */
+    .back-btn { display: flex; align-items: center; gap: 4px; font-size: 14px; color: #185FA5; background: none; border: none; cursor: pointer; padding: 0; margin-bottom: 1.25rem; }
+    .back-btn:hover { opacity: 0.7; }
+    .settings-title { font-size: 20px; font-weight: 500; margin-bottom: 1.25rem; }
+    .settings-field { margin-bottom: 0.75rem; }
+    .settings-field label { font-size: 13px; font-weight: 500; display: block; margin-bottom: 4px; }
+    .settings-field input, .settings-field select { width: 100%; padding: 8px 10px; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; font-size: 14px; font-family: inherit; outline: none; background: #fff; color: #1a1a1a; }
+    .settings-field input:focus, .settings-field select:focus { border-color: rgba(0,0,0,0.4); }
+    .settings-hint { font-size: 12px; color: #888; margin-bottom: 1rem; line-height: 1.5; }
+    .dose-row { display: flex; align-items: center; gap: 8px; margin-bottom: 0.75rem; }
+    .dose-row-label { flex: 1; min-width: 0; }
+    .dose-row-label span { font-size: 13px; font-weight: 500; display: block; }
+    .dose-row-label small { font-size: 11px; color: #888; }
+    .dose-row input { width: 64px; flex-shrink: 0; padding: 6px 8px; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; font-size: 14px; text-align: right; outline: none; font-family: inherit; }
+    .dose-row input:focus { border-color: rgba(0,0,0,0.4); }
+    .dose-row-unit { font-size: 11px; color: #888; white-space: nowrap; flex-shrink: 0; }
+    .dose-reset { font-size: 11px; color: #aaa; background: none; border: none; cursor: pointer; text-decoration: underline; padding: 0; flex-shrink: 0; }
+    .dose-reset:hover { color: #666; }
+    .save-settings-btn { width: 100%; padding: 12px; font-size: 14px; font-weight: 500; background: #e6f1fb; color: #185FA5; border: none; border-radius: 8px; cursor: pointer; margin-bottom: 1.5rem; }
+    .save-settings-btn:hover { opacity: 0.85; }
+    .save-settings-btn:disabled { opacity: 0.5; cursor: default; }
   </style>
 </head>
 <body>
@@ -117,77 +144,187 @@
     </div>
   </div>
 
-  <div id="main-app">
-    <div class="header-row" style="margin-bottom:1.5rem;">
+  <div id="logged-in">
+    <div class="user-bar">
       <span id="user-email" style="font-size:13px;color:#888;"></span>
-      <button class="signout-btn" onclick="signOut()">Sign out</button>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <button class="settings-nav-btn" onclick="openSettings()">Settings</button>
+        <button class="signout-btn" onclick="signOut()">Sign out</button>
+      </div>
     </div>
 
-    <div style="font-size:12px;color:#888;margin-bottom:6px;">Previous reading</div>
-    <div class="summary-grid">
-      <div class="summary-card" id="sc-ph"><div class="summary-label">pH</div><div class="summary-value" id="s-ph">—</div></div>
-      <div class="summary-card" id="sc-cl"><div class="summary-label">Chlorine</div><div class="summary-value" id="s-cl">—</div></div>
-      <div class="summary-card" id="sc-alk"><div class="summary-label">Alkalinity</div><div class="summary-value" id="s-alk">—</div></div>
-    </div>
-    <div id="summary-advice" class="advice" style="display:none;margin-bottom:1rem;"></div>
+    <!-- Main dashboard -->
+    <div id="main-app">
 
-    <div class="card">
-      <h2>Log a reading</h2>
+      <!-- Hot tub graphic -->
+      <div class="tub-graphic-wrap">
+        <svg viewBox="0 0 220 170" xmlns="http://www.w3.org/2000/svg" style="width:180px;height:auto;">
+          <!-- Shell -->
+          <rect x="8" y="8" width="204" height="154" rx="28" fill="#dde8f5" stroke="#b5cfe6" stroke-width="2"/>
+          <!-- Water -->
+          <rect x="30" y="28" width="160" height="114" rx="16" fill="#c4dff5"/>
+          <!-- Ripples -->
+          <path d="M 52 83 Q 80 70 108 83 Q 136 96 164 83 Q 178 75 187 79" stroke="rgba(255,255,255,0.75)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <path d="M 44 103 Q 74 90 106 103 Q 138 116 164 103 Q 178 95 188 99" stroke="rgba(255,255,255,0.5)" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <!-- Jets (corners) -->
+          <circle cx="38" cy="38" r="13" fill="#b0ccdf" stroke="#8fb5d4" stroke-width="1.5"/>
+          <circle cx="38" cy="38" r="6" fill="#8fb5d4"/>
+          <circle cx="182" cy="38" r="13" fill="#b0ccdf" stroke="#8fb5d4" stroke-width="1.5"/>
+          <circle cx="182" cy="38" r="6" fill="#8fb5d4"/>
+          <circle cx="38" cy="132" r="13" fill="#b0ccdf" stroke="#8fb5d4" stroke-width="1.5"/>
+          <circle cx="38" cy="132" r="6" fill="#8fb5d4"/>
+          <circle cx="182" cy="132" r="13" fill="#b0ccdf" stroke="#8fb5d4" stroke-width="1.5"/>
+          <circle cx="182" cy="132" r="6" fill="#8fb5d4"/>
+          <!-- Volume label -->
+          <text id="tub-vol-text" x="110" y="89" text-anchor="middle" dominant-baseline="middle"
+                font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+                font-size="28" font-weight="600" fill="#185FA5">—</text>
+        </svg>
+        <a href="#" id="tub-setup-link" class="tub-setup-link" onclick="openSettings();return false;" style="display:none;">Set up your hot tub →</a>
+      </div>
 
-      <div class="chemical-row">
-        <div class="chemical-label">
-          <span class="chemical-name">pH</span>
-          <span class="chemical-range">Ideal: 7.2 – 7.6</span>
+      <div style="font-size:12px;color:#888;margin-bottom:6px;">Previous reading</div>
+      <div class="summary-grid">
+        <div class="summary-card" id="sc-ph"><div class="summary-label">pH</div><div class="summary-value" id="s-ph">—</div></div>
+        <div class="summary-card" id="sc-cl"><div class="summary-label" id="cl-summary-label">Chlorine</div><div class="summary-value" id="s-cl">—</div></div>
+        <div class="summary-card" id="sc-alk"><div class="summary-label">Alkalinity</div><div class="summary-value" id="s-alk">—</div></div>
+      </div>
+      <div id="summary-advice" class="advice" style="display:none;margin-bottom:1rem;"></div>
+
+      <div class="card">
+        <h2>Log a reading</h2>
+
+        <div class="chemical-row">
+          <div class="chemical-label">
+            <span class="chemical-name">pH</span>
+            <span class="chemical-range">Ideal: 7.2 – 7.6</span>
+          </div>
+          <div class="input-row">
+            <input type="number" id="ph-input" placeholder="e.g. 7.4" step="0.1" min="0" max="14" oninput="updateStatus('ph')">
+            <span class="status-badge badge-empty" id="ph-status">—</span>
+          </div>
         </div>
-        <div class="input-row">
-          <input type="number" id="ph-input" placeholder="e.g. 7.4" step="0.1" min="0" max="14" oninput="updateStatus('ph')">
-          <span class="status-badge badge-empty" id="ph-status">—</span>
+
+        <div class="chemical-row">
+          <div class="chemical-label">
+            <span class="chemical-name" id="sanitizer-label">Chlorine / Bromine</span>
+            <span class="chemical-range">Ideal: 3 – 5 ppm</span>
+          </div>
+          <div class="input-row">
+            <input type="number" id="cl-input" placeholder="e.g. 4.0" step="0.1" min="0" max="20" oninput="updateStatus('cl')">
+            <span class="status-badge badge-empty" id="cl-status">—</span>
+          </div>
+        </div>
+
+        <div class="chemical-row">
+          <div class="chemical-label">
+            <span class="chemical-name">Total alkalinity</span>
+            <span class="chemical-range">Ideal: 80 – 120 ppm</span>
+          </div>
+          <div class="input-row">
+            <input type="number" id="alk-input" placeholder="e.g. 100" step="1" min="0" max="300" oninput="updateStatus('alk')">
+            <span class="status-badge badge-empty" id="alk-status">—</span>
+          </div>
+        </div>
+
+        <div class="notes-row">
+          <label for="notes-input">Notes</label>
+          <textarea id="notes-input" placeholder="e.g. Added chlorine tablets, water looked cloudy..."></textarea>
+        </div>
+
+        <div id="advice-box" style="display:none;" class="advice"></div>
+        <button class="log-btn" onclick="logReading()">Save reading</button>
+      </div>
+
+      <div class="card">
+        <h2>Trends</h2>
+        <div id="trend-empty" class="trend-empty" style="display:none;">No readings yet</div>
+        <canvas id="trend-chart" style="display:none;"></canvas>
+      </div>
+
+      <div class="card">
+        <h2>History</h2>
+        <div id="history-list"><div class="empty-history">No readings logged yet</div></div>
+      </div>
+    </div><!-- /#main-app -->
+
+    <!-- Settings page -->
+    <div id="settings-page" style="display:none;">
+      <button class="back-btn" onclick="closeSettings()">← Back</button>
+      <div class="settings-title">Settings</div>
+
+      <div class="card">
+        <h2>Hot tub details</h2>
+        <div class="settings-field">
+          <label for="setting-volume">Volume (litres)</label>
+          <input type="number" id="setting-volume" placeholder="e.g. 1200" min="100" max="20000" step="50">
+        </div>
+        <div class="settings-field">
+          <label for="setting-sanitizer-type">Sanitizer type</label>
+          <select id="setting-sanitizer-type" onchange="onSanitizerTypeChange()">
+            <option value="chlorine">Chlorine</option>
+            <option value="bromine">Bromine</option>
+          </select>
+        </div>
+        <div class="settings-field">
+          <label for="setting-sanitizer-form">Sanitizer form</label>
+          <select id="setting-sanitizer-form" onchange="onSanitizerFormChange()">
+            <option value="granules">Granules</option>
+            <option value="tablets">Tablets</option>
+            <option value="liquid">Liquid</option>
+          </select>
         </div>
       </div>
 
-      <div class="chemical-row">
-        <div class="chemical-label">
-          <span class="chemical-name">Chlorine / Bromine</span>
-          <span class="chemical-range">Ideal: 3 – 5 ppm</span>
+      <div class="card">
+        <h2>Dosage rates</h2>
+        <p class="settings-hint">Amounts calculated from these rates. Adjust if your product label says something different.</p>
+
+        <div class="dose-row">
+          <div class="dose-row-label">
+            <span>pH Up</span>
+            <small>sodium carbonate</small>
+          </div>
+          <input type="number" id="dose-ph-up" min="1" max="200" step="1">
+          <span class="dose-row-unit">g / 1,000L / 0.2 pH</span>
+          <button class="dose-reset" onclick="resetDose('ph-up')">reset</button>
         </div>
-        <div class="input-row">
-          <input type="number" id="cl-input" placeholder="e.g. 4.0" step="0.1" min="0" max="20" oninput="updateStatus('cl')">
-          <span class="status-badge badge-empty" id="cl-status">—</span>
+
+        <div class="dose-row">
+          <div class="dose-row-label">
+            <span>pH Down</span>
+            <small>sodium bisulfate</small>
+          </div>
+          <input type="number" id="dose-ph-down" min="1" max="200" step="1">
+          <span class="dose-row-unit">g / 1,000L / 0.2 pH</span>
+          <button class="dose-reset" onclick="resetDose('ph-down')">reset</button>
+        </div>
+
+        <div class="dose-row" id="dose-sanitizer-row">
+          <div class="dose-row-label">
+            <span id="dose-sanitizer-label">Chlorine granules</span>
+            <small id="dose-sanitizer-chemical">dichlor</small>
+          </div>
+          <input type="number" id="dose-sanitizer" min="0.1" max="200" step="0.1">
+          <span class="dose-row-unit" id="dose-sanitizer-unit">g / 1,000L / 1 ppm</span>
+          <button class="dose-reset" onclick="resetDose('sanitizer')">reset</button>
+        </div>
+
+        <div class="dose-row">
+          <div class="dose-row-label">
+            <span>Alkalinity Up</span>
+            <small>sodium bicarbonate</small>
+          </div>
+          <input type="number" id="dose-alk-up" min="1" max="200" step="1">
+          <span class="dose-row-unit">g / 1,000L / 10 ppm</span>
+          <button class="dose-reset" onclick="resetDose('alk-up')">reset</button>
         </div>
       </div>
 
-      <div class="chemical-row">
-        <div class="chemical-label">
-          <span class="chemical-name">Total alkalinity</span>
-          <span class="chemical-range">Ideal: 80 – 120 ppm</span>
-        </div>
-        <div class="input-row">
-          <input type="number" id="alk-input" placeholder="e.g. 100" step="1" min="0" max="300" oninput="updateStatus('alk')">
-          <span class="status-badge badge-empty" id="alk-status">—</span>
-        </div>
-      </div>
-
-      <div class="notes-row">
-        <label for="notes-input">Notes</label>
-        <textarea id="notes-input" placeholder="e.g. Added chlorine tablets, water looked cloudy..."></textarea>
-      </div>
-
-      <div id="advice-box" style="display:none;" class="advice"></div>
-      <button class="log-btn" onclick="logReading()">Save reading</button>
-    </div>
-
-    <div class="card">
-      <h2>Trends</h2>
-      <div id="trend-empty" class="trend-empty" style="display:none;">No readings yet</div>
-      <canvas id="trend-chart" style="display:none;"></canvas>
-    </div>
-
-    <div class="card">
-      <h2>History</h2>
-      <div id="history-list"><div class="empty-history">No readings logged yet</div></div>
-    </div>
-  </div>
-</div>
+      <button class="save-settings-btn" id="save-settings-btn" onclick="saveSettingsToDb()">Save settings</button>
+    </div><!-- /#settings-page -->
+  </div><!-- /#logged-in -->
+</div><!-- /.app -->
 
 <!-- Delete confirmation modal -->
 <div class="modal-overlay" id="delete-modal">
@@ -206,7 +343,7 @@
   <div class="modal">
     <h3>Edit reading</h3>
     <div class="edit-field"><label>pH</label><input type="number" id="edit-ph" step="0.1" min="0" max="14" placeholder="—"></div>
-    <div class="edit-field"><label>Chlorine / Bromine (ppm)</label><input type="number" id="edit-cl" step="0.1" min="0" max="20" placeholder="—"></div>
+    <div class="edit-field"><label id="edit-sanitizer-label">Chlorine / Bromine (ppm)</label><input type="number" id="edit-cl" step="0.1" min="0" max="20" placeholder="—"></div>
     <div class="edit-field"><label>Total alkalinity (ppm)</label><input type="number" id="edit-alk" step="1" min="0" max="300" placeholder="—"></div>
     <div class="edit-field"><label>Notes</label><textarea id="edit-notes" placeholder="Notes…"></textarea></div>
     <div class="modal-btns">
@@ -222,24 +359,40 @@ const SUPABASE_KEY = 'sb_publishable_sWZ58R0jKqImcueDeHK2Cw_l6RJiBRi';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const chemicals = {
-  ph:  { min: 7.2, max: 7.6,  label: 'pH',        low: 'pH is low — add pH increaser (sodium carbonate)',               high: 'pH is high — add pH decreaser (sodium bisulfate)',                  good: 'pH is spot on' },
-  cl:  { min: 3,   max: 5,    label: 'Chlorine',   low: 'Chlorine is low — add chlorine/bromine tablets or shock',        high: 'Chlorine is very high — allow to dissipate before using the tub',   good: 'Chlorine level is good' },
-  alk: { min: 80,  max: 120,  label: 'Alkalinity', low: 'Alkalinity is low — add alkalinity increaser (sodium bicarbonate)', high: 'Alkalinity is high — add pH decreaser slowly to bring it down', good: 'Alkalinity is balanced' }
+  ph:  { min: 7.2, max: 7.6,  label: 'pH',        low: 'pH is low — add pH Up (sodium carbonate)',                       high: 'pH is high — add pH Down (sodium bisulfate)',             good: 'pH is spot on'          },
+  cl:  { min: 3,   max: 5,    label: 'Chlorine',   low: 'Sanitizer is low — add chlorine/bromine or shock',               high: 'Sanitizer is very high — let it dissipate before using',  good: 'Sanitizer level is good' },
+  alk: { min: 80,  max: 120,  label: 'Alkalinity', low: 'Alkalinity is low — add Alkalinity Up (sodium bicarbonate)',     high: 'Alkalinity is high — add pH Down slowly to lower it',    good: 'Alkalinity is balanced' }
+};
+
+// Default dose rates (used when user hasn't customised)
+const DOSE_DEFAULTS = {
+  'ph-up':   15,   // g per 1,000L per 0.2 pH unit raise
+  'ph-down': 25,   // g per 1,000L per 0.2 pH unit drop
+  'alk-up':  15,   // g per 1,000L per 10 ppm TA raise
+  sanitizer: {     // g (or mL for liquid) per 1,000L per 1 ppm, by type-form key
+    'chlorine-granules': 1,
+    'chlorine-liquid':   17.5,
+    'bromine-granules':  1.2,
+  }
 };
 
 let history = [];
 let currentUser = null;
+let userSettings = {};
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
 
 db.auth.onAuthStateChange((_event, session) => {
   currentUser = session?.user ?? null;
   if (currentUser) {
     document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('main-app').style.display = 'block';
+    document.getElementById('logged-in').style.display = 'block';
     document.getElementById('user-email').textContent = currentUser.email;
-    loadHistory();
+    Promise.all([loadSettingsFromDb(), loadHistory()]);
   } else {
     document.getElementById('auth-screen').style.display = 'block';
-    document.getElementById('main-app').style.display = 'none';
+    document.getElementById('logged-in').style.display = 'none';
+    userSettings = {};
   }
 });
 
@@ -262,9 +415,7 @@ async function signUp() {
   showAuthError('Check your email to confirm your account.');
 }
 
-async function signOut() {
-  await db.auth.signOut();
-}
+async function signOut() { await db.auth.signOut(); }
 
 function setAuthBtns(disabled) {
   document.querySelectorAll('.auth-btns button').forEach(b => b.disabled = disabled);
@@ -275,6 +426,220 @@ function showAuthError(msg) {
   el.textContent = msg || '';
   el.style.display = msg ? 'block' : 'none';
 }
+
+// ── Settings ─────────────────────────────────────────────────────────────────
+
+async function loadSettingsFromDb() {
+  if (!currentUser) return;
+  const { data, error } = await db
+    .from('user_settings')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .maybeSingle();
+  if (error) { console.error('Error loading settings:', error); return; }
+  userSettings = data || {};
+  applySettings();
+}
+
+function applySettings() {
+  updateTubGraphic();
+  updateSanitizerLabel();
+  updateAdvice();
+}
+
+function openSettings() {
+  populateSettingsForm();
+  document.getElementById('main-app').style.display = 'none';
+  document.getElementById('settings-page').style.display = 'block';
+}
+
+function closeSettings() {
+  document.getElementById('settings-page').style.display = 'none';
+  document.getElementById('main-app').style.display = 'block';
+}
+
+function populateSettingsForm() {
+  const s = userSettings;
+  const type = s.sanitizer_type || 'chlorine';
+  const form = s.sanitizer_form || 'granules';
+
+  document.getElementById('setting-volume').value = s.volume_litres || '';
+  document.getElementById('setting-sanitizer-type').value = type;
+  updateSanitizerFormOptions(type);
+  document.getElementById('setting-sanitizer-form').value = form;
+
+  document.getElementById('dose-ph-up').value   = s.dose_ph_up   ?? DOSE_DEFAULTS['ph-up'];
+  document.getElementById('dose-ph-down').value = s.dose_ph_down ?? DOSE_DEFAULTS['ph-down'];
+  document.getElementById('dose-alk-up').value  = s.dose_alk_up  ?? DOSE_DEFAULTS['alk-up'];
+  const saniKey = `${type}-${form}`;
+  document.getElementById('dose-sanitizer').value = s.dose_sanitizer ?? (DOSE_DEFAULTS.sanitizer[saniKey] || 1);
+
+  updateDoseSanitizerMeta();
+  updateDoseRatesVisibility();
+}
+
+function onSanitizerTypeChange() {
+  const type = document.getElementById('setting-sanitizer-type').value;
+  updateSanitizerFormOptions(type);
+  const form = document.getElementById('setting-sanitizer-form').value;
+  document.getElementById('dose-sanitizer').value = DOSE_DEFAULTS.sanitizer[`${type}-${form}`] || 1;
+  updateDoseSanitizerMeta();
+  updateDoseRatesVisibility();
+}
+
+function onSanitizerFormChange() {
+  const type = document.getElementById('setting-sanitizer-type').value;
+  const form = document.getElementById('setting-sanitizer-form').value;
+  document.getElementById('dose-sanitizer').value = DOSE_DEFAULTS.sanitizer[`${type}-${form}`] || 1;
+  updateDoseSanitizerMeta();
+  updateDoseRatesVisibility();
+}
+
+function updateSanitizerFormOptions(type) {
+  const sel = document.getElementById('setting-sanitizer-form');
+  const prev = sel.value;
+  if (type === 'bromine') {
+    sel.innerHTML = '<option value="granules">Granules</option><option value="tablets">Tablets</option>';
+    sel.value = (prev === 'liquid') ? 'granules' : prev;
+  } else {
+    sel.innerHTML = '<option value="granules">Granules</option><option value="tablets">Tablets</option><option value="liquid">Liquid</option>';
+    sel.value = prev;
+  }
+}
+
+function updateDoseSanitizerMeta() {
+  const type = document.getElementById('setting-sanitizer-type').value;
+  const form = document.getElementById('setting-sanitizer-form').value;
+  const labelEl = document.getElementById('dose-sanitizer-label');
+  const chemEl  = document.getElementById('dose-sanitizer-chemical');
+  const unitEl  = document.getElementById('dose-sanitizer-unit');
+  if (type === 'chlorine' && form === 'liquid') {
+    labelEl.textContent = 'Liquid chlorine'; chemEl.textContent = 'sodium hypochlorite'; unitEl.textContent = 'mL / 1,000L / 1 ppm';
+  } else if (type === 'bromine') {
+    labelEl.textContent = 'Bromine granules'; chemEl.textContent = 'BCDMH'; unitEl.textContent = 'g / 1,000L / 1 ppm';
+  } else {
+    labelEl.textContent = 'Chlorine granules'; chemEl.textContent = 'dichlor'; unitEl.textContent = 'g / 1,000L / 1 ppm';
+  }
+}
+
+function updateDoseRatesVisibility() {
+  const form = document.getElementById('setting-sanitizer-form').value;
+  document.getElementById('dose-sanitizer-row').style.display = form === 'tablets' ? 'none' : 'flex';
+}
+
+function resetDose(key) {
+  if (key === 'ph-up')   { document.getElementById('dose-ph-up').value   = DOSE_DEFAULTS['ph-up'];   return; }
+  if (key === 'ph-down') { document.getElementById('dose-ph-down').value = DOSE_DEFAULTS['ph-down']; return; }
+  if (key === 'alk-up')  { document.getElementById('dose-alk-up').value  = DOSE_DEFAULTS['alk-up'];  return; }
+  if (key === 'sanitizer') {
+    const type = document.getElementById('setting-sanitizer-type').value;
+    const form = document.getElementById('setting-sanitizer-form').value;
+    document.getElementById('dose-sanitizer').value = DOSE_DEFAULTS.sanitizer[`${type}-${form}`] || 1;
+  }
+}
+
+async function saveSettingsToDb() {
+  const btn = document.getElementById('save-settings-btn');
+  const vol      = parseFloat(document.getElementById('setting-volume').value);
+  const type     = document.getElementById('setting-sanitizer-type').value;
+  const form     = document.getElementById('setting-sanitizer-form').value;
+  const dosePhUp   = parseFloat(document.getElementById('dose-ph-up').value);
+  const dosePhDown = parseFloat(document.getElementById('dose-ph-down').value);
+  const doseAlkUp  = parseFloat(document.getElementById('dose-alk-up').value);
+  const doseSani   = parseFloat(document.getElementById('dose-sanitizer').value);
+
+  const settings = {
+    user_id:        currentUser.id,
+    volume_litres:  isNaN(vol)      ? null : vol,
+    sanitizer_type: type,
+    sanitizer_form: form,
+    dose_ph_up:     isNaN(dosePhUp)   ? DOSE_DEFAULTS['ph-up']   : dosePhUp,
+    dose_ph_down:   isNaN(dosePhDown) ? DOSE_DEFAULTS['ph-down'] : dosePhDown,
+    dose_alk_up:    isNaN(doseAlkUp)  ? DOSE_DEFAULTS['alk-up']  : doseAlkUp,
+    dose_sanitizer: isNaN(doseSani)   ? null : doseSani,
+    updated_at:     new Date().toISOString(),
+  };
+
+  btn.disabled = true; btn.textContent = 'Saving…';
+  const { error } = await db.from('user_settings').upsert(settings, { onConflict: 'user_id' });
+  btn.disabled = false; btn.textContent = 'Save settings';
+
+  if (error) { alert('Error saving settings: ' + error.message); return; }
+  userSettings = settings;
+  applySettings();
+  closeSettings();
+}
+
+function updateTubGraphic() {
+  const vol = userSettings.volume_litres;
+  const textEl = document.getElementById('tub-vol-text');
+  const linkEl = document.getElementById('tub-setup-link');
+  if (vol) {
+    textEl.textContent = `${vol}L`;
+    textEl.setAttribute('fill', '#185FA5');
+    linkEl.style.display = 'none';
+  } else {
+    textEl.textContent = '?';
+    textEl.setAttribute('fill', '#aaa');
+    linkEl.style.display = 'inline-block';
+  }
+}
+
+function updateSanitizerLabel() {
+  const type = userSettings.sanitizer_type;
+  const label = type === 'chlorine' ? 'Chlorine' : type === 'bromine' ? 'Bromine' : 'Chlorine / Bromine';
+  document.getElementById('sanitizer-label').textContent = label;
+  document.getElementById('cl-summary-label').textContent = label;
+  document.getElementById('edit-sanitizer-label').textContent = label + ' (ppm)';
+}
+
+// ── Dosage calculator ─────────────────────────────────────────────────────────
+
+function calcDosage(key, val) {
+  const s = userSettings;
+  if (!s.volume_litres) return null;
+  const vol = s.volume_litres;
+
+  function r5(n)  { return Math.max(5,  Math.round(n / 5)  * 5);  }
+  function r10(n) { return Math.max(10, Math.round(n / 10) * 10); }
+
+  if (key === 'ph') {
+    if (val < 7.2) {
+      const rate = s.dose_ph_up ?? DOSE_DEFAULTS['ph-up'];
+      return `Add ${r5((7.4 - val) / 0.2 * rate * vol / 1000)}g of pH Up (sodium carbonate)`;
+    }
+    if (val > 7.6) {
+      const rate = s.dose_ph_down ?? DOSE_DEFAULTS['ph-down'];
+      return `Add ${r5((val - 7.4) / 0.2 * rate * vol / 1000)}g of pH Down (sodium bisulfate)`;
+    }
+  }
+
+  if (key === 'cl' && val < 3) {
+    const deficit = 4 - val;
+    const type = s.sanitizer_type || 'chlorine';
+    const form = s.sanitizer_form || 'granules';
+    if (form === 'tablets') {
+      const n = Math.max(1, Math.round(deficit * vol / 3000));
+      const name = type === 'bromine' ? 'bromine' : 'chlorine';
+      return `Add ${n} ${name} ${n === 1 ? 'tablet' : 'tablets'} to floater`;
+    }
+    const rate = s.dose_sanitizer ?? (DOSE_DEFAULTS.sanitizer[`${type}-${form}`] || 1);
+    if (form === 'liquid') {
+      return `Add ${r10(deficit * rate * vol / 1000)}mL of liquid chlorine`;
+    }
+    const name = type === 'bromine' ? 'bromine granules' : 'chlorine granules';
+    return `Add ${r5(deficit * rate * vol / 1000)}g of ${name}`;
+  }
+
+  if (key === 'alk' && val < 80) {
+    const rate = s.dose_alk_up ?? DOSE_DEFAULTS['alk-up'];
+    return `Add ${r5((100 - val) / 10 * rate * vol / 1000)}g of Alkalinity Up (sodium bicarbonate)`;
+  }
+
+  return null;
+}
+
+// ── Readings ──────────────────────────────────────────────────────────────────
 
 async function loadHistory() {
   if (!currentUser) return;
@@ -325,9 +690,9 @@ function updateSummary(readings) {
   const box = document.getElementById('summary-advice');
   if (!latest) { box.style.display = 'none'; return; }
   const lines = [];
-  if (latest.ph         != null) { const s = getStatus('ph',  latest.ph);         if (s !== 'good') lines.push(chemicals.ph[s]);  }
-  if (latest.chlorine   != null) { const s = getStatus('cl',  latest.chlorine);   if (s !== 'good') lines.push(chemicals.cl[s]);  }
-  if (latest.alkalinity != null) { const s = getStatus('alk', latest.alkalinity); if (s !== 'good') lines.push(chemicals.alk[s]); }
+  if (latest.ph         != null) { const s = getStatus('ph',  latest.ph);         if (s !== 'good') lines.push(calcDosage('ph',  latest.ph)         || chemicals.ph[s]);  }
+  if (latest.chlorine   != null) { const s = getStatus('cl',  latest.chlorine);   if (s !== 'good') lines.push(calcDosage('cl',  latest.chlorine)   || chemicals.cl[s]);  }
+  if (latest.alkalinity != null) { const s = getStatus('alk', latest.alkalinity); if (s !== 'good') lines.push(calcDosage('alk', latest.alkalinity) || chemicals.alk[s]); }
   if (lines.length === 0) { box.style.display = 'none'; return; }
   box.style.display = 'block';
   box.innerHTML = lines.map(l => '• ' + l).join('<br>');
@@ -339,11 +704,7 @@ function renderChart(readings) {
   const sorted = [...readings].reverse();
   const canvas = document.getElementById('trend-chart');
   const empty  = document.getElementById('trend-empty');
-  if (sorted.length === 0) {
-    canvas.style.display = 'none';
-    empty.style.display = 'block';
-    return;
-  }
+  if (sorted.length === 0) { canvas.style.display = 'none'; empty.style.display = 'block'; return; }
   canvas.style.display = 'block';
   empty.style.display = 'none';
   const labels = sorted.map(e =>
@@ -355,63 +716,19 @@ function renderChart(readings) {
     data: {
       labels,
       datasets: [
-        {
-          label: 'pH',
-          data: sorted.map(e => e.ph),
-          borderColor: '#185FA5',
-          backgroundColor: 'rgba(24,95,165,0.08)',
-          tension: 0.3,
-          spanGaps: true,
-          yAxisID: 'yLeft',
-          pointRadius: 3,
-        },
-        {
-          label: 'Chlorine (ppm)',
-          data: sorted.map(e => e.chlorine),
-          borderColor: '#3B6D11',
-          backgroundColor: 'rgba(59,109,17,0.08)',
-          tension: 0.3,
-          spanGaps: true,
-          yAxisID: 'yLeft',
-          pointRadius: 3,
-        },
-        {
-          label: 'Alkalinity (ppm)',
-          data: sorted.map(e => e.alkalinity),
-          borderColor: '#854F0B',
-          backgroundColor: 'rgba(133,79,11,0.08)',
-          tension: 0.3,
-          spanGaps: true,
-          yAxisID: 'yAlk',
-          pointRadius: 3,
-        },
+        { label: 'pH',             data: sorted.map(e => e.ph),         borderColor: '#185FA5', backgroundColor: 'rgba(24,95,165,0.08)',   tension: 0.3, spanGaps: true, yAxisID: 'yLeft', pointRadius: 3 },
+        { label: 'Chlorine (ppm)', data: sorted.map(e => e.chlorine),   borderColor: '#3B6D11', backgroundColor: 'rgba(59,109,17,0.08)',   tension: 0.3, spanGaps: true, yAxisID: 'yLeft', pointRadius: 3 },
+        { label: 'Alkalinity (ppm)',data: sorted.map(e => e.alkalinity), borderColor: '#854F0B', backgroundColor: 'rgba(133,79,11,0.08)',   tension: 0.3, spanGaps: true, yAxisID: 'yAlk',  pointRadius: 3 },
       ]
     },
     options: {
       responsive: true,
       interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { labels: { font: { size: 12 }, boxWidth: 12, padding: 16 } }
-      },
+      plugins: { legend: { labels: { font: { size: 12 }, boxWidth: 12, padding: 16 } } },
       scales: {
-        yLeft: {
-          type: 'linear',
-          position: 'left',
-          title: { display: true, text: 'pH / Chlorine (ppm)', font: { size: 11 }, color: '#888' },
-          ticks: { font: { size: 11 } },
-          grid: { color: 'rgba(0,0,0,0.06)' },
-        },
-        yAlk: {
-          type: 'linear',
-          position: 'right',
-          title: { display: true, text: 'Alkalinity (ppm)', font: { size: 11 }, color: '#888' },
-          ticks: { font: { size: 11 } },
-          grid: { drawOnChartArea: false },
-        },
-        x: {
-          ticks: { font: { size: 11 }, maxRotation: 45 },
-          grid: { color: 'rgba(0,0,0,0.06)' },
-        }
+        yLeft: { type: 'linear', position: 'left',  title: { display: true, text: 'pH / Chlorine (ppm)', font: { size: 11 }, color: '#888' }, ticks: { font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.06)' } },
+        yAlk:  { type: 'linear', position: 'right', title: { display: true, text: 'Alkalinity (ppm)',    font: { size: 11 }, color: '#888' }, ticks: { font: { size: 11 } }, grid: { drawOnChartArea: false } },
+        x:     { ticks: { font: { size: 11 }, maxRotation: 45 }, grid: { color: 'rgba(0,0,0,0.06)' } }
       }
     }
   });
@@ -432,8 +749,7 @@ function updateStatus(key) {
   const status = getStatus(key, val);
   badge.textContent = status === 'good' ? 'Good' : status === 'low' ? 'Too low' : 'Too high';
   badge.className = 'status-badge ' + (status === 'good' ? 'badge-good' : status === 'low' ? 'badge-warn' : 'badge-bad');
-  const sid = key === 'ph' ? 's-ph' : key === 'cl' ? 's-cl' : 's-alk';
-  document.getElementById(sid).textContent = val.toFixed(key === 'alk' ? 0 : 1);
+  document.getElementById(key === 'ph' ? 's-ph' : key === 'cl' ? 's-cl' : 's-alk').textContent = val.toFixed(key === 'alk' ? 0 : 1);
   updateAdvice();
 }
 
@@ -444,7 +760,7 @@ function updateAdvice() {
     const val = parseFloat(document.getElementById(key + '-input').value);
     if (isNaN(val)) return;
     const status = getStatus(key, val);
-    if (status !== 'good') lines.push(chemicals[key][status]);
+    if (status !== 'good') lines.push(calcDosage(key, val) || chemicals[key][status]);
   });
   if (lines.length === 0) { box.style.display = 'none'; return; }
   box.style.display = 'block';
@@ -457,19 +773,11 @@ async function logReading() {
   const alk = parseFloat(document.getElementById('alk-input').value);
   const notes = document.getElementById('notes-input').value.trim();
   if (isNaN(ph) && isNaN(cl) && isNaN(alk)) { alert('Enter at least one reading before saving.'); return; }
-  const entry = {
-    user_id: currentUser.id,
-    ph: isNaN(ph) ? null : ph,
-    chlorine: isNaN(cl) ? null : cl,
-    alkalinity: isNaN(alk) ? null : alk,
-    notes: notes || null
-  };
+  const entry = { user_id: currentUser.id, ph: isNaN(ph) ? null : ph, chlorine: isNaN(cl) ? null : cl, alkalinity: isNaN(alk) ? null : alk, notes: notes || null };
   const btn = document.querySelector('.log-btn');
-  btn.disabled = true;
-  btn.textContent = 'Saving…';
+  btn.disabled = true; btn.textContent = 'Saving…';
   const { error } = await db.from('readings').insert([entry]);
-  btn.disabled = false;
-  btn.textContent = 'Save reading';
+  btn.disabled = false; btn.textContent = 'Save reading';
   if (error) { alert('Error saving reading: ' + error.message); return; }
   ['ph-input','cl-input','alk-input'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('notes-input').value = '';
@@ -483,14 +791,13 @@ function renderHistory() {
   if (history.length === 0) { el.innerHTML = '<div class="empty-history">No readings logged yet</div>'; return; }
   el.innerHTML = history.slice(0, 10).map(e => {
     const pills = [];
-    if (e.ph        !== null) { const s = getStatus('ph',  e.ph);        pills.push(`<span class="history-pill pill-${s === 'good' ? 'good' : s === 'low' ? 'warn' : 'bad'}">pH ${e.ph.toFixed(1)}</span>`); }
-    if (e.chlorine  !== null) { const s = getStatus('cl',  e.chlorine);  pills.push(`<span class="history-pill pill-${s === 'good' ? 'good' : s === 'low' ? 'warn' : 'bad'}">Cl ${e.chlorine.toFixed(1)}</span>`); }
-    if (e.alkalinity !== null) { const s = getStatus('alk', e.alkalinity); pills.push(`<span class="history-pill pill-${s === 'good' ? 'good' : s === 'low' ? 'warn' : 'bad'}">Alk ${Math.round(e.alkalinity)}</span>`); }
+    if (e.ph         !== null) { const s = getStatus('ph',  e.ph);         pills.push(`<span class="history-pill pill-${s==='good'?'good':s==='low'?'warn':'bad'}">pH ${e.ph.toFixed(1)}</span>`); }
+    if (e.chlorine   !== null) { const s = getStatus('cl',  e.chlorine);   pills.push(`<span class="history-pill pill-${s==='good'?'good':s==='low'?'warn':'bad'}">Cl ${e.chlorine.toFixed(1)}</span>`); }
+    if (e.alkalinity !== null) { const s = getStatus('alk', e.alkalinity); pills.push(`<span class="history-pill pill-${s==='good'?'good':s==='low'?'warn':'bad'}">Alk ${Math.round(e.alkalinity)}</span>`); }
     const notesHtml = e.notes ? `<div class="history-notes">${e.notes}</div>` : '';
-    const date = new Date(e.created_at).toLocaleString('en-GB');
     return `<div class="history-item">
       <div class="history-item-header">
-        <span class="history-date">${date}</span>
+        <span class="history-date">${new Date(e.created_at).toLocaleString('en-GB')}</span>
         <div class="item-actions">
           <button class="btn-edit-item" onclick="openEditModal(${e.id})">Edit</button>
           <button class="btn-delete-item" onclick="openDeleteModal(${e.id})">Delete</button>
@@ -502,12 +809,9 @@ function renderHistory() {
 }
 
 let pendingDeleteId = null;
-let pendingEditId = null;
+let pendingEditId   = null;
 
-function openDeleteModal(id) {
-  pendingDeleteId = id;
-  document.getElementById('delete-modal').classList.add('open');
-}
+function openDeleteModal(id) { pendingDeleteId = id; document.getElementById('delete-modal').classList.add('open'); }
 
 async function confirmDelete() {
   const btn = document.getElementById('delete-confirm-btn');
@@ -523,10 +827,10 @@ function openEditModal(id) {
   const e = history.find(r => r.id === id);
   if (!e) return;
   pendingEditId = id;
-  document.getElementById('edit-ph').value  = e.ph        ?? '';
-  document.getElementById('edit-cl').value  = e.chlorine  ?? '';
-  document.getElementById('edit-alk').value = e.alkalinity ?? '';
-  document.getElementById('edit-notes').value = e.notes   ?? '';
+  document.getElementById('edit-ph').value    = e.ph          ?? '';
+  document.getElementById('edit-cl').value    = e.chlorine    ?? '';
+  document.getElementById('edit-alk').value   = e.alkalinity  ?? '';
+  document.getElementById('edit-notes').value = e.notes       ?? '';
   document.getElementById('edit-modal').classList.add('open');
 }
 
@@ -538,21 +842,14 @@ async function saveEdit() {
   if (isNaN(ph) && isNaN(cl) && isNaN(alk)) { alert('Enter at least one reading before saving.'); return; }
   const btn = document.getElementById('edit-save-btn');
   btn.disabled = true;
-  const { error } = await db.from('readings').update({
-    ph: isNaN(ph) ? null : ph,
-    chlorine: isNaN(cl) ? null : cl,
-    alkalinity: isNaN(alk) ? null : alk,
-    notes: notes || null
-  }).eq('id', pendingEditId);
+  const { error } = await db.from('readings').update({ ph: isNaN(ph)?null:ph, chlorine: isNaN(cl)?null:cl, alkalinity: isNaN(alk)?null:alk, notes: notes||null }).eq('id', pendingEditId);
   btn.disabled = false;
   closeModal('edit-modal');
   if (error) { alert('Error saving reading: ' + error.message); return; }
   await loadHistory();
 }
 
-function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
-}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 </script>
 </body>
 </html>
